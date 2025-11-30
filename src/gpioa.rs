@@ -82,7 +82,6 @@ pub type Lckr = crate::Reg<lckr::LckrSpec>;
 #[doc = "Port configuration lock register"]
 pub mod lckr;
 
-use crate::Periph;
 use embedded_hal::digital::{ErrorType, OutputPin};
 use core::convert::Infallible;
 
