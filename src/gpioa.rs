@@ -82,25 +82,21 @@ pub type Lckr = crate::Reg<lckr::LckrSpec>;
 #[doc = "Port configuration lock register"]
 pub mod lckr;
 
-
-
-use crate::Gpioa;
+use crate::Periph;
 use embedded_hal::digital::{ErrorType, OutputPin};
 use core::convert::Infallible;
-
 
 /// Represents a general-purpose GPIO pin configured as push-pull output at 50 MHz.
 ///
 /// # Example
 ///
 /// ```no_run
-/// use stm32f103_pac::{Peripherals, Gpioa, Pin};
+/// use stm32f103_pac::{Peripherals, Pin, GPIOA};
 ///
 /// let dp = Peripherals::take().unwrap();
-/// let gpioa = dp.GPIOA;
 ///
 /// // Create PA5 as an output pin
-/// let mut pa5 = Pin::new(&gpioa, 5);
+/// let mut pa5 = Pin::new(dp.GPIOA, 5);
 ///
 /// // Set the pin high
 /// pa5.set_high().unwrap();
@@ -116,79 +112,90 @@ use core::convert::Infallible;
 /// - The error type is `Infallible` since there are no real error conditions.
 /// - `pin_number` must be between 0 and 15; otherwise, `new` will panic.
 /// - Compatible with **embedded-hal 1.0**, so it can be used in generic code
-///   requiring `embedded_hal::digital::OutputPin`
-pub struct Pin {
-    port: Gpioa,
+///   requiring `embedded_hal::digital::OutputPin`.
+pub struct Pin<PORT> {
+    port: PORT,
     pin_number: u8,
 }
-impl ErrorType for Pin {
+
+impl<PORT> ErrorType for Pin<PORT> {
     type Error = Infallible;
 }
 
-impl Pin{
-    /// Create new instance of a general purpose gpio
-    /// 
-    /// configure as:
-    /// push-pull, CNF = 00
-    /// 50 Mhz output, 11
-    
-    pub fn new(port: &Gpioa, pin_number: u8) {
+impl<PORT> Pin<PORT>
+where
+    PORT: core::ops::Deref<Target = crate::gpioa::RegisterBlock>,
+{
+    /// Create new instance of a general-purpose GPIO
+    ///
+    /// Configures as:
+    /// - Push-pull output (CNF = 00)
+    /// - 50 MHz output (MODE = 11)
+    pub fn new(port: PORT, pin_number: u8) -> Self {
         assert!(pin_number < 16, "Pin number must be 0..15");
-        match pin_number {
-            0..=7 => {
-                let shift = (pin_number as u32) * 4;
-                port.crl.modify(|r, w| unsafe {
-                    let mut bits = r.bits();
-                    bits &= !(0b1111 << shift); // clean 4 bit
-                    bits |= 0b0011 << shift; // output push-pull 50 MHz
-                    w.bits(bits)
-                });
-            }
-            8..=15 => {
-                let shift = ((pin_number - 8) as u32) * 4;
-                port.crh.modify(|r, w| unsafe {
-                    let mut bits = r.bits();
-                    bits &= !(0b1111 << shift); // clean 4 bit
-                    bits |= 0b0011 << shift; // output push-pull 50 MHz
-                    w.bits(bits)
-                });
-            }
-            _ => panic!("Pin must be 0..15"),
+
+        let shift = if pin_number < 8 {
+            (pin_number as u32) * 4
+        } else {
+            ((pin_number - 8) as u32) * 4
+        };
+
+        if pin_number < 8 {
+            port.crl.modify(|r, w| unsafe {
+                let mut bits = r.bits();
+                bits &= !(0b1111 << shift);
+                bits |= 0b0011 << shift;
+                w.bits(bits)
+            });
+        } else {
+            port.crh.modify(|r, w| unsafe {
+                let mut bits = r.bits();
+                bits &= !(0b1111 << shift);
+                bits |= 0b0011 << shift;
+                w.bits(bits)
+            });
         }
+
+        Self { port, pin_number }
     }
-    /// Sets the GPIO pin high (logic level 1).
+
+
+    /// Sets the GPIO pin high (logic level 1)
     ///
     /// # Example
     ///
     /// ```
-    /// # let mut pin: Pin = todo!();
-    /// pin.set_high().unwrap();
+    /// # let mut pin: Pin<GPIOA> = todo!();
+    /// pin.set_high();
     /// ```
-    pub fn set_high(&self) {
-            self.port.bsrr.write(|w| unsafe { w.bits(1 << self.pin_number) });
-        }
-    /// Sets the GPIO pin low (logic level 0).
+    pub fn set_high_direct(&self) {
+        self.port.bsrr.write(|w| unsafe { w.bits(1 << self.pin_number) });
+    }
+
+    /// Sets the GPIO pin low (logic level 0)
     ///
     /// # Example
     ///
     /// ```
-    /// # let mut pin: Pin = todo!();
-    /// pin.set_low().unwrap();
+    /// # let mut pin: Pin<GPIOA> = todo!();
+    /// pin.set_low();
     /// ```
-    pub fn set_low(&self) {
+    pub fn set_low_direct(&self) {
         self.port.bsrr.write(|w| unsafe { w.bits(1 << (self.pin_number + 16)) });
     }
 }
 
-impl OutputPin for Pin {
-    /// wrappper to be used with outputpin using the embedded_hal crate v1.0.0
+impl<PORT> OutputPin for Pin<PORT>
+where
+    PORT: core::ops::Deref<Target = crate::gpioa::RegisterBlock>,
+{
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        self.port.bsrr.write(|w| unsafe { w.bits(1 << self.pin_number) });
+        self.set_high_direct();
         Ok(())
     }
-    /// wrappper to be used with outputpin using the embedded_hal crate v1.0.0
+
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        self.port.bsrr.write(|w| unsafe { w.bits(1 << (self.pin_number + 16)) });
+        self.set_low_direct();
         Ok(())
     }
 }
