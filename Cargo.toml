@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 authors = ["Riccardo Adami riccioadami@gmail.com"]
 
-description = "Peripheral Access Crate (PAC) per STM32F103"
+description = "Peripheral Access Crate (PAC) for STM32F103"
 license = "Apache-2.0"
 repository = "https://github.com/riccio8/stm32f103-pac"
 documentation = "https://docs.rs/stm32f103-pac"
