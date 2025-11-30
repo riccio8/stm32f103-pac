@@ -11,6 +11,7 @@ documentation = "https://docs.rs/stm32f103-pac"
 
 [dependencies]
 cortex-m = "0.7.7"
+embedded-hal = "1.0.0"
 vcell = "0.1" 
 
 
