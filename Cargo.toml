@@ -1,0 +1,13 @@
+[package]
+name = "stm32f103-pac"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cortex-m = "0.7.7"
+vcell = "0.1" 
+
+
+[features]
+rt = []
+"critical-section" = []
