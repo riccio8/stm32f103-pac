@@ -82,8 +82,8 @@ pub type Lckr = crate::Reg<lckr::LckrSpec>;
 #[doc = "Port configuration lock register"]
 pub mod lckr;
 
-use embedded_hal::digital::{ErrorType, OutputPin};
 use core::convert::Infallible;
+use embedded_hal::digital::{ErrorType, OutputPin};
 
 /// Represents a general-purpose GPIO pin configured as push-pull output at 50 MHz.
 ///
@@ -157,7 +157,7 @@ where
 
         Self { port, pin_number }
     }
-
+    
 
     /// Sets the GPIO pin high (logic level 1)
     ///
@@ -168,7 +168,9 @@ where
     /// pin.set_high();
     /// ```
     pub fn set_high_direct(&self) {
-        self.port.bsrr.write(|w| unsafe { w.bits(1 << self.pin_number) });
+        self.port
+            .bsrr
+            .write(|w| unsafe { w.bits(1 << self.pin_number) });
     }
 
     /// Sets the GPIO pin low (logic level 0)
@@ -180,7 +182,9 @@ where
     /// pin.set_low();
     /// ```
     pub fn set_low_direct(&self) {
-        self.port.bsrr.write(|w| unsafe { w.bits(1 << (self.pin_number + 16)) });
+        self.port
+            .bsrr
+            .write(|w| unsafe { w.bits(1 << (self.pin_number + 16)) });
     }
 }
 
